@@ -47,7 +47,7 @@ declare module AngularSmarterModels {
         getAsync(params: any): ng.IPromise<ModelInstance>;
         list(params: any): ModelWrapper[];
         listAsync(params: any): ng.IPromise<ModelWrapper[]>;
-        create(params: any): ng.IPromise<ModelInstance>;
+        create(params: any, props: any): ng.IPromise<ModelInstance>;
     }
 }
 

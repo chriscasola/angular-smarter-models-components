@@ -15,6 +15,9 @@ var AngularSmarterModels;
     var ModelInstance = (function () {
         function ModelInstance(config) {
             this.config = config;
+            if (!angular.isObject(this.config.rawModel)) {
+                this.config.rawModel = {};
+            }
         }
         Object.defineProperty(ModelInstance.prototype, "props", {
             get: function () {
@@ -68,10 +71,10 @@ var AngularSmarterModels;
         Model.prototype.listAsync = function (params) {
             return this.config.modelDataRetriever.listAsync(this.config.listPath, this.config.modelPath, params, this.config.idField);
         };
-        Model.prototype.create = function (params) {
+        Model.prototype.create = function (params, props) {
             var createPath = this.config.modelPath.split('/').slice(0, -1).join('/') + '/';
             return this.config.modelDataRetriever.create(createPath, this.config.listPath, params, new this.config.ModelInstance({
-                rawModel: {},
+                rawModel: props,
                 modelDataRetriever: this.config.modelDataRetriever,
                 modelPath: this.config.modelPath,
                 idField: this.config.idField,
