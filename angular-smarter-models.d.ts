@@ -1,20 +1,12 @@
-/// <reference path="../typings/tsd.d.ts" />
 declare module AngularSmarterModels {
     var smModule: ng.IModule;
 }
-
-/// <reference path="../typings/tsd.d.ts" />
-/// <reference path="module.d.ts" />
 declare module AngularSmarterModels {
     interface ModelWrapper {
         props: any;
         config: any;
     }
 }
-
-/// <reference path="../typings/tsd.d.ts" />
-/// <reference path="module.d.ts" />
-/// <reference path="model-wrapper.d.ts" />
 declare module AngularSmarterModels {
     interface ModelInstanceConfig {
         rawModel: any;
@@ -35,10 +27,6 @@ declare module AngularSmarterModels {
         delete(): ng.IPromise<void>;
     }
 }
-
-/// <reference path="module.d.ts" />
-/// <reference path="model-instance.d.ts" />
-/// <reference path="model-wrapper.d.ts" />
 declare module AngularSmarterModels {
     interface ModelConfig {
         modelDataRetriever: ModelDataRetriever;
@@ -57,10 +45,6 @@ declare module AngularSmarterModels {
         create(params: any, props: any): ng.IPromise<ModelInstance>;
     }
 }
-
-/// <reference path="../typings/tsd.d.ts" />
-/// <reference path="module.d.ts" />
-/// <reference path="model-wrapper.d.ts" />
 declare module AngularSmarterModels {
     class ModelListItemInstance implements ModelWrapper {
         private _config;
@@ -69,11 +53,6 @@ declare module AngularSmarterModels {
         props: any;
     }
 }
-
-/// <reference path="module.d.ts" />
-/// <reference path="model-instance.d.ts" />
-/// <reference path="model.d.ts" />
-/// <reference path="model-list-item-instance.d.ts" />
 declare module AngularSmarterModels {
     class ModelDataRetrieverError extends Error {
         constructor(message: any);
@@ -100,11 +79,6 @@ declare module AngularSmarterModels {
         delete(modelPath: string, listPath: string, identifyingField: string): ng.IPromise<void>;
     }
 }
-
-/// <reference path="module.d.ts" />
-/// <reference path="model-instance.d.ts" />
-/// <reference path="model.d.ts" />
-/// <reference path="model-data-retriever.d.ts" />
 declare module AngularSmarterModels {
     class ModelBuilder {
         private route;
