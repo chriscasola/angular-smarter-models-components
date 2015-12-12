@@ -54,6 +54,19 @@ declare module AngularSmarterModels {
     }
 }
 declare module AngularSmarterModels {
+    interface ModelErrorConfig {
+        error: string;
+        time: number;
+    }
+    class ModelError implements ModelWrapper {
+        config: ModelErrorConfig;
+        constructor(config: ModelErrorConfig);
+        props: any;
+        error: string;
+        time: number;
+    }
+}
+declare module AngularSmarterModels {
     class ModelDataRetrieverError extends Error {
         constructor(message: any);
     }
@@ -66,7 +79,10 @@ declare module AngularSmarterModels {
         private listCache;
         constructor($q: ng.IQService, $http: ng.IHttpService);
         private cacheModel(modelUrl, listUrl, ModelInstance, modelData, identifyingField);
+        private cacheError(modelUrl, listUrl, identifyingField);
         private cacheList(modelUrl, modelData);
+        private hasListCache(modelUrl);
+        private shouldRetryFetch(modelError);
         private addModelToList(modelUrl, model, position?);
         private removeModelFromList(modelUrl, modelId, identifyingField);
         get(modelPath: string, listPath: string, params: any, ModelInstance: any, identifyingField: string): ModelInstance;

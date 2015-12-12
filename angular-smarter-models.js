@@ -115,10 +115,46 @@ var AngularSmarterModels;
     AngularSmarterModels.smModule.value('SMModelListItemInstance', ModelListItemInstance);
 })(AngularSmarterModels || (AngularSmarterModels = {}));
 
+/// <reference path="../typings/tsd.d.ts"/>
+/// <reference path="./module.ts"/>
+/// <reference path="./model-wrapper.ts"/>
+var AngularSmarterModels;
+(function (AngularSmarterModels) {
+    var ModelError = (function () {
+        function ModelError(config) {
+            this.config = config;
+        }
+        Object.defineProperty(ModelError.prototype, "props", {
+            get: function () {
+                return undefined;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(ModelError.prototype, "error", {
+            get: function () {
+                return this.config.error;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(ModelError.prototype, "time", {
+            get: function () {
+                return this.config.time;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        return ModelError;
+    })();
+    AngularSmarterModels.ModelError = ModelError;
+})(AngularSmarterModels || (AngularSmarterModels = {}));
+
 /// <reference path="./module.ts"/>
 /// <reference path="./model-instance.ts"/>
 /// <reference path="./model.ts"/>
 /// <reference path="./model-list-item-instance.ts"/>
+/// <reference path="./model-error.ts"/>
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -135,6 +171,7 @@ var AngularSmarterModels;
         return ModelDataRetrieverError;
     })(Error);
     AngularSmarterModels.ModelDataRetrieverError = ModelDataRetrieverError;
+    var retryInterval = 10000;
     function buildUrl(path, params) {
         return path.split('/').map(function (pathComponent) {
             if (pathComponent[0] === ':') {
@@ -168,13 +205,28 @@ var AngularSmarterModels;
             this.addModelToList(listUrl, modelInstance, 0);
             return modelInstance;
         };
+        ModelDataRetriever.prototype.cacheError = function (modelUrl, listUrl, identifyingField) {
+            var errorInstance = new AngularSmarterModels.ModelError({
+                error: 'An error occurred fetching the model!',
+                time: Date.now(),
+            });
+            this.modelCache[modelUrl] = errorInstance;
+            return errorInstance;
+        };
         ModelDataRetriever.prototype.cacheList = function (modelUrl, modelData) {
             this.listCache[modelUrl] = modelData;
             return modelData;
         };
+        ModelDataRetriever.prototype.hasListCache = function (modelUrl) {
+            var cacheItem = this.listCache[modelUrl];
+            return this.listCache.hasOwnProperty(modelUrl) && cacheItem !== null;
+        };
+        ModelDataRetriever.prototype.shouldRetryFetch = function (modelError) {
+            return Date.now() - modelError.time > retryInterval;
+        };
         ModelDataRetriever.prototype.addModelToList = function (modelUrl, model, position) {
             if (position === void 0) { position = 0; }
-            if (this.listCache.hasOwnProperty(modelUrl)) {
+            if (this.hasListCache(modelUrl)) {
                 var modelList = this.listCache[modelUrl];
                 for (var i = 0; i < modelList.length; i++) {
                     if (modelList[i].props[model.config.idField] === model.props[model.config.idField]) {
@@ -196,17 +248,22 @@ var AngularSmarterModels;
         };
         ModelDataRetriever.prototype.get = function (modelPath, listPath, params, ModelInstance, identifyingField) {
             var modelUrl = buildUrl(modelPath, params);
-            if (this.modelCache.hasOwnProperty(modelUrl)) {
-                return this.modelCache[modelUrl];
+            var cachedValue = this.modelCache[modelUrl];
+            var valueInCache = this.modelCache.hasOwnProperty(modelUrl);
+            if (!valueInCache || (cachedValue instanceof AngularSmarterModels.ModelError && this.shouldRetryFetch(cachedValue))) {
+                this.getAsync(modelPath, listPath, params, ModelInstance, identifyingField);
             }
-            this.getAsync(modelPath, listPath, params, ModelInstance, identifyingField);
+            if (valueInCache) {
+                return cachedValue;
+            }
         };
         ModelDataRetriever.prototype.getAsync = function (modelPath, listPath, params, ModelInstance, identifyingField) {
             var _this = this;
             var modelUrl = buildUrl(modelPath, params);
             var modelPromise;
-            if (this.modelCache.hasOwnProperty(modelUrl)) {
-                modelPromise = this.$q.when(this.modelCache[modelUrl]);
+            var cachedValue = this.modelCache[modelUrl];
+            if (this.modelCache.hasOwnProperty(modelUrl) && !(cachedValue instanceof AngularSmarterModels.ModelError)) {
+                modelPromise = this.$q.when(cachedValue);
             }
             else if (this.outstandingRequests.hasOwnProperty(modelUrl)) {
                 modelPromise = this.outstandingRequests[modelUrl];
@@ -215,6 +272,9 @@ var AngularSmarterModels;
                 modelPromise = this.$http.get(modelUrl)
                     .then(function (response) {
                     return _this.cacheModel(modelUrl, listPath, ModelInstance, response.data, identifyingField);
+                })
+                    .catch(function (response) {
+                    return _this.$q.reject(_this.cacheError(modelUrl, listPath, identifyingField));
                 })
                     .finally(function () {
                     delete _this.outstandingRequests[modelUrl];
@@ -248,16 +308,18 @@ var AngularSmarterModels;
         };
         ModelDataRetriever.prototype.list = function (listPath, modelPath, params, identifyingField) {
             var modelUrl = buildUrl(listPath, params);
-            if (this.listCache.hasOwnProperty(modelUrl)) {
+            if (this.hasListCache(modelUrl)) {
                 return this.listCache[modelUrl];
             }
-            this.listAsync(listPath, modelPath, params, identifyingField);
+            if (this.listCache[modelUrl] !== null) {
+                this.listAsync(listPath, modelPath, params, identifyingField);
+            }
         };
         ModelDataRetriever.prototype.listAsync = function (listPath, modelPath, params, identifyingField) {
             var _this = this;
             var modelUrl = buildUrl(listPath, params);
             var modelPromise;
-            if (this.listCache.hasOwnProperty(modelUrl)) {
+            if (this.hasListCache(modelUrl)) {
                 modelPromise = this.$q.when(this.listCache[modelUrl]);
             }
             else if (this.outstandingRequests.hasOwnProperty(modelUrl)) {
@@ -289,6 +351,10 @@ var AngularSmarterModels;
                         var _a;
                     });
                     return _this.cacheList(modelUrl, modelList);
+                })
+                    .catch(function (response) {
+                    _this.listCache[modelUrl] = null;
+                    return _this.$q.reject(response);
                 })
                     .finally(function () {
                     delete _this.outstandingRequests[modelUrl];
@@ -329,9 +395,17 @@ var AngularSmarterModels;
         return ModelDataRetriever;
     })();
     AngularSmarterModels.ModelDataRetriever = ModelDataRetriever;
+    var serviceProvider = {
+        setRetryInterval: function (interval) {
+            retryInterval = interval;
+        },
+        $get: ['$injector', function ($injector) {
+                return $injector.instantiate(ModelDataRetriever);
+            }]
+    };
     AngularSmarterModels.smModule
         .value('smModelDataRetrieverError', ModelDataRetrieverError)
-        .service('smModelDataRetriever', ModelDataRetriever);
+        .provider('smModelDataRetriever', serviceProvider);
 })(AngularSmarterModels || (AngularSmarterModels = {}));
 
 /// <reference path="./module.ts"/>
