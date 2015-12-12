@@ -42,7 +42,7 @@ var AngularSmarterModels;
             return this.config.modelDataRetriever.save(this);
         };
         ModelInstance.prototype.delete = function () {
-            return this.config.modelDataRetriever.delete(this.config.modelPath, this.config.listPath);
+            return this.config.modelDataRetriever.delete(this.config.modelPath, this.config.listPath, this.config.idField);
         };
         return ModelInstance;
     })();
@@ -298,7 +298,9 @@ var AngularSmarterModels;
             return modelPromise;
         };
         ModelDataRetriever.prototype.save = function (model) {
-            return this.$http.post(model.getModelPath(), model.serialize());
+            return this.$http.post(model.getModelPath(), model.serialize()).then(function (response) {
+                // do nothing, do this to return a standard angular promise instead of an $http one
+            });
         };
         ModelDataRetriever.prototype.create = function (modelPath, listPath, params, model) {
             var _this = this;
