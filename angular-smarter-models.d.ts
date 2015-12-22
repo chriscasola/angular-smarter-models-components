@@ -69,7 +69,8 @@ declare module AngularSmarterModels {
 }
 declare module AngularSmarterModels {
     class ModelDataRetrieverError extends Error {
-        constructor(message: any);
+        message: string;
+        constructor(message: string);
     }
     class ModelDataRetriever {
         private $q;
