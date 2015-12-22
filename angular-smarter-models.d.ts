@@ -42,6 +42,7 @@ declare module AngularSmarterModels {
         getAsync(params: any): ng.IPromise<ModelInstance>;
         list(params: any): ModelWrapper[];
         listAsync(params: any): ng.IPromise<ModelWrapper[]>;
+        getMultipleAsync(params: any): ng.IPromise<ModelInstance[]>;
         create(params: any, props: any): ng.IPromise<ModelInstance>;
     }
 }
@@ -87,7 +88,7 @@ declare module AngularSmarterModels {
         private removeModelFromList(modelUrl, modelId, identifyingField);
         get(modelPath: string, listPath: string, params: any, ModelInstance: any, identifyingField: string): ModelInstance;
         getAsync(modelPath: string, listPath: string, params: any, ModelInstance: any, identifyingField: string): ng.IPromise<ModelInstance>;
-        getMultiple(modelPath: string, listPath: string, params: any, ModelInstance: any, identifyingField: string): ng.IPromise<Array<ModelInstance>>;
+        getMultipleAsync(modelPath: string, listPath: string, params: any, ModelInstance: any, identifyingField: string): ng.IPromise<Array<ModelInstance>>;
         list(listPath: string, modelPath: string, params: any, identifyingField: string): ModelWrapper[];
         listAsync(listPath: string, modelPath: string, params: any, identifyingField: string): ng.IPromise<ModelWrapper[]>;
         save(model: ModelInstance): ng.IPromise<void>;

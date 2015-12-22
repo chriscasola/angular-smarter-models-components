@@ -71,6 +71,9 @@ var AngularSmarterModels;
         Model.prototype.listAsync = function (params) {
             return this.config.modelDataRetriever.listAsync(this.config.listPath, this.config.modelPath, params, this.config.idField);
         };
+        Model.prototype.getMultipleAsync = function (params) {
+            return this.config.modelDataRetriever.getMultipleAsync(this.config.modelPath, this.config.listPath, params, this.config.ModelInstance, this.config.idField);
+        };
         Model.prototype.create = function (params, props) {
             var createPath = this.config.modelPath.split('/').slice(0, -1).join('/') + '/';
             return this.config.modelDataRetriever.create(createPath, this.config.listPath, params, new this.config.ModelInstance({
@@ -283,7 +286,7 @@ var AngularSmarterModels;
             }
             return modelPromise;
         };
-        ModelDataRetriever.prototype.getMultiple = function (modelPath, listPath, params, ModelInstance, identifyingField) {
+        ModelDataRetriever.prototype.getMultipleAsync = function (modelPath, listPath, params, ModelInstance, identifyingField) {
             var _this = this;
             var modelUrl = buildUrl(modelPath, params);
             var modelPromise;
