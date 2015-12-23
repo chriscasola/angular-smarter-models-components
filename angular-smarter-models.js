@@ -179,6 +179,29 @@ var AngularSmarterModels;
         return ModelDataRetrieverError;
     })(Error);
     AngularSmarterModels.ModelDataRetrieverError = ModelDataRetrieverError;
+    var UrlCache = (function () {
+        function UrlCache() {
+            this.cache = {};
+        }
+        UrlCache.prototype.has = function (key) {
+            return this.cache.hasOwnProperty(this.stripTrailingSlash(key));
+        };
+        UrlCache.prototype.get = function (key) {
+            return this.cache[this.stripTrailingSlash(key)];
+        };
+        UrlCache.prototype.set = function (key, value) {
+            this.cache[this.stripTrailingSlash(key)] = value;
+        };
+        UrlCache.prototype.stripTrailingSlash = function (key) {
+            if (key.slice(-1) === '/') {
+                return key.slice(0, -1);
+            }
+            else {
+                return key;
+            }
+        };
+        return UrlCache;
+    })();
     var retryInterval = 10000;
     function buildUrl(path, params) {
         return path.split('/').map(function (pathComponent) {
@@ -198,7 +221,7 @@ var AngularSmarterModels;
             this.$http = $http;
             this.modelCache = {};
             this.outstandingRequests = {};
-            this.listCache = {};
+            this.listCache = new UrlCache();
         }
         ModelDataRetriever.prototype.cacheModel = function (modelUrl, listUrl, ModelInstance, modelData, identifyingField) {
             var self = this;
@@ -222,12 +245,12 @@ var AngularSmarterModels;
             return errorInstance;
         };
         ModelDataRetriever.prototype.cacheList = function (modelUrl, modelData) {
-            this.listCache[modelUrl] = modelData;
+            this.listCache.set(modelUrl, modelData);
             return modelData;
         };
         ModelDataRetriever.prototype.hasListCache = function (modelUrl) {
-            var cacheItem = this.listCache[modelUrl];
-            return this.listCache.hasOwnProperty(modelUrl) && cacheItem !== null;
+            var cacheItem = this.listCache.get(modelUrl);
+            return this.listCache.has(modelUrl) && cacheItem !== null;
         };
         ModelDataRetriever.prototype.shouldRetryFetch = function (modelError) {
             return Date.now() - modelError.time > retryInterval;
@@ -235,18 +258,18 @@ var AngularSmarterModels;
         ModelDataRetriever.prototype.addModelToList = function (modelUrl, model, position) {
             if (position === void 0) { position = 0; }
             if (this.hasListCache(modelUrl)) {
-                var modelList = this.listCache[modelUrl];
+                var modelList = this.listCache.get(modelUrl);
                 for (var i = 0; i < modelList.length; i++) {
                     if (modelList[i].props[model.config.idField] === model.props[model.config.idField]) {
                         modelList[i] = model;
                         return;
                     }
                 }
-                this.listCache[modelUrl].splice(position, 0, model);
+                this.listCache.get(modelUrl).splice(position, 0, model);
             }
         };
         ModelDataRetriever.prototype.removeModelFromList = function (modelUrl, modelId, identifyingField) {
-            var modelList = this.listCache[modelUrl];
+            var modelList = this.listCache.get(modelUrl);
             for (var i = 0; i < modelList.length; i++) {
                 if (modelList[i].props[identifyingField] === modelId) {
                     modelList.splice(i, 1);
@@ -292,84 +315,19 @@ var AngularSmarterModels;
             return modelPromise;
         };
         ModelDataRetriever.prototype.getMultipleAsync = function (modelPath, listPath, params, ModelInstance, identifyingField) {
-            var _this = this;
-            var modelUrl = buildUrl(modelPath, params);
-            var modelPromise;
-            if (this.outstandingRequests.hasOwnProperty(modelUrl)) {
-                modelPromise = this.outstandingRequests[modelUrl];
-            }
-            else {
-                modelPromise = this.$http.get(modelUrl).then(function (response) {
-                    if (!angular.isArray(response.data)) {
-                        return _this.$q.reject(new ModelDataRetrieverError("Expected array of models for getMultiple request for path \"" + modelUrl + "\"!"));
-                    }
-                    return response.data.map(function (modelData) {
-                        return _this.cacheModel(modelUrl + '/' + modelData[identifyingField], listPath, ModelInstance, modelData, identifyingField);
-                    });
-                })
-                    .finally(function () {
-                    delete _this.outstandingRequests[modelUrl];
-                });
-                this.outstandingRequests[modelUrl] = modelPromise;
-            }
-            return modelPromise;
+            return this.getMultipleHelper(modelPath, listPath, params, ModelInstance, identifyingField, false);
         };
         ModelDataRetriever.prototype.list = function (listPath, modelPath, params, identifyingField) {
             var modelUrl = buildUrl(listPath, params);
             if (this.hasListCache(modelUrl)) {
-                return this.listCache[modelUrl];
+                return this.listCache.get(modelUrl);
             }
-            if (this.listCache[modelUrl] !== null) {
+            if (this.listCache.get(modelUrl) !== null) {
                 this.listAsync(listPath, modelPath, params, identifyingField);
             }
         };
         ModelDataRetriever.prototype.listAsync = function (listPath, modelPath, params, identifyingField) {
-            var _this = this;
-            var modelUrl = buildUrl(listPath, params);
-            var modelPromise;
-            if (this.hasListCache(modelUrl)) {
-                modelPromise = this.$q.when(this.listCache[modelUrl]);
-            }
-            else if (this.outstandingRequests.hasOwnProperty(modelUrl)) {
-                modelPromise = this.outstandingRequests[modelUrl];
-            }
-            else {
-                modelPromise = this.$http.get(modelUrl).then(function (response) {
-                    if (!angular.isArray(response.data)) {
-                        return _this.$q.reject(new ModelDataRetrieverError("Expected array of models for list request for path \"" + modelUrl + "\"!"));
-                    }
-                    var modelList = response.data.map(function (listItem) {
-                        var actualModelParams = (_a = {},
-                            _a[identifyingField] = listItem[identifyingField],
-                            _a
-                        );
-                        angular.extend(actualModelParams, params);
-                        var actualModelUrl = buildUrl(modelPath, actualModelParams);
-                        if (_this.modelCache.hasOwnProperty(actualModelUrl)) {
-                            return _this.modelCache[actualModelUrl];
-                        }
-                        else {
-                            return new AngularSmarterModels.ModelListItemInstance({
-                                rawModel: listItem,
-                                config: {
-                                    idField: identifyingField,
-                                },
-                            });
-                        }
-                        var _a;
-                    });
-                    return _this.cacheList(modelUrl, modelList);
-                })
-                    .catch(function (response) {
-                    _this.listCache[modelUrl] = null;
-                    return _this.$q.reject(response);
-                })
-                    .finally(function () {
-                    delete _this.outstandingRequests[modelUrl];
-                });
-                this.outstandingRequests[modelUrl] = modelPromise;
-            }
-            return modelPromise;
+            return this.getMultipleHelper(listPath, modelPath, params, null, identifyingField, true);
         };
         ModelDataRetriever.prototype.save = function (model) {
             return this.$http.post(model.getModelPath(), model.serialize()).then(function (response) {
@@ -398,6 +356,57 @@ var AngularSmarterModels;
                     _this.removeModelFromList(listPath, modelId, identifyingField);
                 }
             });
+        };
+        ModelDataRetriever.prototype.getMultipleHelper = function (collectionPath, modelPath, params, ModelInstance, identifyingField, isList) {
+            var _this = this;
+            var modelUrl = buildUrl(collectionPath, params);
+            var modelPromise;
+            if (this.hasListCache(modelUrl)) {
+                modelPromise = this.$q.when(this.listCache.get(modelUrl));
+            }
+            else if (this.outstandingRequests.hasOwnProperty(modelUrl)) {
+                modelPromise = this.outstandingRequests[modelUrl];
+            }
+            else {
+                modelPromise = this.$http.get(modelUrl).then(function (response) {
+                    if (!angular.isArray(response.data)) {
+                        return _this.$q.reject(new ModelDataRetrieverError("Expected array of models for list request for path \"" + modelUrl + "\"!"));
+                    }
+                    var modelList = response.data.map(function (listItem) {
+                        var actualModelParams = (_a = {},
+                            _a[identifyingField] = listItem[identifyingField],
+                            _a
+                        );
+                        angular.extend(actualModelParams, params);
+                        var actualModelUrl = buildUrl(modelPath, actualModelParams);
+                        if (_this.modelCache.hasOwnProperty(actualModelUrl)) {
+                            return _this.modelCache[actualModelUrl];
+                        }
+                        else if (!isList) {
+                            return _this.cacheModel(modelUrl, collectionPath, ModelInstance, listItem, identifyingField);
+                        }
+                        else {
+                            return new AngularSmarterModels.ModelListItemInstance({
+                                rawModel: listItem,
+                                config: {
+                                    idField: identifyingField,
+                                },
+                            });
+                        }
+                        var _a;
+                    });
+                    return _this.cacheList(modelUrl, modelList);
+                })
+                    .catch(function (response) {
+                    _this.listCache.set(modelUrl, null);
+                    return _this.$q.reject(response);
+                })
+                    .finally(function () {
+                    delete _this.outstandingRequests[modelUrl];
+                });
+                this.outstandingRequests[modelUrl] = modelPromise;
+            }
+            return modelPromise;
         };
         ModelDataRetriever.$inject = ['$q', '$http'];
         return ModelDataRetriever;
