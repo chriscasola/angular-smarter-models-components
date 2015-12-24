@@ -76,7 +76,7 @@ var AngularSmarterModels;
             if (collectionPath.slice(-1) === '/') {
                 collectionPath = collectionPath.slice(0, -1);
             }
-            return this.config.modelDataRetriever.getMultipleAsync(collectionPath, this.config.listPath, params, this.config.ModelInstance, this.config.idField);
+            return this.config.modelDataRetriever.getMultipleAsync(collectionPath, this.config.modelPath, params, this.config.ModelInstance, this.config.idField);
         };
         Model.prototype.create = function (params, props) {
             var createPath = this.config.modelPath.split('/').slice(0, -1).join('/') + '/';
@@ -314,8 +314,8 @@ var AngularSmarterModels;
             }
             return modelPromise;
         };
-        ModelDataRetriever.prototype.getMultipleAsync = function (modelPath, listPath, params, ModelInstance, identifyingField) {
-            return this.getMultipleHelper(modelPath, listPath, params, ModelInstance, identifyingField, false);
+        ModelDataRetriever.prototype.getMultipleAsync = function (collectionPath, modelPath, params, ModelInstance, identifyingField) {
+            return this.getMultipleHelper(collectionPath, modelPath, params, ModelInstance, identifyingField, false);
         };
         ModelDataRetriever.prototype.list = function (listPath, modelPath, params, identifyingField) {
             var modelUrl = buildUrl(listPath, params);
@@ -339,6 +339,7 @@ var AngularSmarterModels;
             var modelUrl = buildUrl(modelPath, params);
             return this.$http.put(modelUrl, model.serialize()).then(function (response) {
                 model.merge(response.data);
+                model.setModelPath(response.headers('Location'));
                 _this.modelCache[response.headers('Location')] = model;
                 _this.addModelToList(listPath, model);
                 return model;
@@ -383,7 +384,7 @@ var AngularSmarterModels;
                             return _this.modelCache[actualModelUrl];
                         }
                         else if (!isList) {
-                            return _this.cacheModel(modelUrl, collectionPath, ModelInstance, listItem, identifyingField);
+                            return _this.cacheModel(actualModelUrl, collectionPath, ModelInstance, listItem, identifyingField);
                         }
                         else {
                             return new AngularSmarterModels.ModelListItemInstance({

@@ -89,7 +89,7 @@ declare module AngularSmarterModels {
         private removeModelFromList(modelUrl, modelId, identifyingField);
         get(modelPath: string, listPath: string, params: any, ModelInstance: any, identifyingField: string): ModelInstance;
         getAsync(modelPath: string, listPath: string, params: any, ModelInstance: any, identifyingField: string): ng.IPromise<ModelInstance>;
-        getMultipleAsync(modelPath: string, listPath: string, params: any, ModelInstance: any, identifyingField: string): ng.IPromise<ModelInstance[]>;
+        getMultipleAsync(collectionPath: string, modelPath: string, params: any, ModelInstance: any, identifyingField: string): ng.IPromise<ModelInstance[]>;
         list(listPath: string, modelPath: string, params: any, identifyingField: string): ModelWrapper[];
         listAsync(listPath: string, modelPath: string, params: any, identifyingField: string): ng.IPromise<ModelWrapper[]>;
         save(model: ModelInstance): ng.IPromise<void>;
