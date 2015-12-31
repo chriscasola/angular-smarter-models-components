@@ -88,6 +88,9 @@ var AngularSmarterModels;
                 listPath: this.config.listPath
             }));
         };
+        Model.prototype.deleteAll = function () {
+            return this.config.modelDataRetriever.deleteAll(this.config.listPath);
+        };
         return Model;
     })();
     AngularSmarterModels.Model = Model;
@@ -278,6 +281,9 @@ var AngularSmarterModels;
                 }
             }
         };
+        ModelDataRetriever.prototype.emptyListInCache = function (modelUrl) {
+            this.listCache.set(modelUrl, []);
+        };
         ModelDataRetriever.prototype.get = function (modelPath, listPath, params, ModelInstance, identifyingField) {
             var modelUrl = buildUrl(modelPath, params);
             var cachedValue = this.modelCache[modelUrl];
@@ -356,6 +362,21 @@ var AngularSmarterModels;
             return this.$http.delete(modelPath).then(function (response) {
                 if (modelId != null) {
                     _this.removeModelFromList(listPath, modelId, identifyingField);
+                }
+            });
+        };
+        ModelDataRetriever.prototype.deleteAll = function (listPath) {
+            var _this = this;
+            return this.$http.delete(listPath).then(function (response) {
+                _this.emptyListInCache(listPath);
+                _this.purgeModelsMatchingPath(listPath);
+            });
+        };
+        ModelDataRetriever.prototype.purgeModelsMatchingPath = function (path) {
+            var _this = this;
+            angular.forEach(this.modelCache, function (model, key) {
+                if (key.indexOf(path) > -1) {
+                    delete _this.modelCache[key];
                 }
             });
         };

@@ -44,6 +44,7 @@ declare module AngularSmarterModels {
         listAsync(params: any): ng.IPromise<ModelWrapper[]>;
         getMultipleAsync(params: any): ng.IPromise<ModelInstance[]>;
         create(params: any, props: any): ng.IPromise<ModelInstance>;
+        deleteAll(): ng.IPromise<void>;
     }
 }
 declare module AngularSmarterModels {
@@ -87,6 +88,7 @@ declare module AngularSmarterModels {
         private shouldRetryFetch(modelError);
         private addModelToList(modelUrl, model, position?);
         private removeModelFromList(modelUrl, modelId, identifyingField);
+        private emptyListInCache(modelUrl);
         get(modelPath: string, listPath: string, params: any, ModelInstance: any, identifyingField: string): ModelInstance;
         getAsync(modelPath: string, listPath: string, params: any, ModelInstance: any, identifyingField: string): ng.IPromise<ModelInstance>;
         getMultipleAsync(collectionPath: string, modelPath: string, params: any, ModelInstance: any, identifyingField: string): ng.IPromise<ModelInstance[]>;
@@ -95,6 +97,8 @@ declare module AngularSmarterModels {
         save(model: ModelInstance): ng.IPromise<void>;
         create(modelPath: string, listPath: string, params: any, model: ModelInstance): ng.IPromise<ModelInstance>;
         delete(modelPath: string, listPath: string, identifyingField: string): ng.IPromise<void>;
+        deleteAll(listPath: string): ng.IPromise<void>;
+        private purgeModelsMatchingPath(path);
         private getMultipleHelper<T>(collectionPath, modelPath, params, ModelInstance, identifyingField, isList);
     }
 }
